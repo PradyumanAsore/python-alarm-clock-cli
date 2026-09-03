@@ -109,17 +109,3 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 ```
 
 ---
-
-## Interviewer Q&A Guide
-
-### Q1: Why did you choose an interactive REPL instead of a background daemon?
-**Answer**: An interactive REPL using `asyncio` allows background alarm monitoring and user commands to run concurrently inside a single process without needing IPC (sockets, RPC), PID files, or OS-specific background services. It keeps the architecture lightweight, simple, and self-contained.
-
-### Q2: How do you prevent time-dependent unit tests from being slow or flaky?
-**Answer**: We injected a `Clock` protocol into `AlarmService`. In production, `SystemClock` uses real time. In tests, `TestClock` allows setting simulated starting times and advancing clock state instantaneously via `clock.advance()`. This allows testing hours or days of alarm scheduling in milliseconds.
-
-### Q3: What happens if the computer goes to sleep and wakes up past the alarm time?
-**Answer**: Our dynamic ticker calculates `sleep_time = min(secs_left, 1.0)`. Upon waking up from sleep, the loop immediately executes `tick()`. Any past-due pending alarms are identified (`current_time >= effective_time`) and triggered instantly with a notification banner.
-
-### Q4: How does the system handle multiple alarms set for the exact same second?
-**Answer**: `AlarmService.tick()` iterates over all registered alarms during a single tick. Any alarm whose `effective_time <= now` is triggered in order. No alarm is skipped or dropped.
